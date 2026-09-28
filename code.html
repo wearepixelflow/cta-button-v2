@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Social Flip V2 - Dark Matter</title>
+  
+  <!-- FontAwesome for Icons (Updated to v6.5.2 to include fa-x-twitter) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <!-- Google Fonts for sharp typography -->
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Inter:wght@500;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-color: #030303;
+      --dock-bg: #0a0a0c;
+      --card-bg: #111114;
+      --text-main: #ffffff;
+      --text-muted: #888888;
+      
+      /* The glowing border colors */
+      --shine-color-1: rgba(255, 255, 255, 0.05);
+      --shine-color-2: rgba(255, 255, 255, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-color);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      perspective: 1500px;
+    }
+
+    /* Subtle background grid for a premium tech feel */
+    body::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: 
+        linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 40px 40px;
+      mask-image: radial-gradient(circle at center, black 40%, transparent 80%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* This allows us to animate a conic gradient angle natively in CSS */
+    @property --angle {
+      syntax: '<angle>';
+      initial-value: 0deg;
+      inherits: false;
+    }
+
+    @keyframes border-spin {
+      from { --angle: 0deg; }
+      to { --angle: 360deg; }
+    }
+
+    /* Added a subtle breathing glow effect to the track */
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.8), 0 0 15px rgba(255,255,255,0.05); }
+      50% { box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.8), 0 0 35px rgba(255,255,255,0.2); }
+    }
+
+    .dock-wrapper {
+      position: relative;
+      z-index: 10;
+      /* The glowing track behind the dock */
+      background: conic-gradient(
+        from var(--angle), 
+        var(--shine-color-1) 0%, 
+        var(--shine-color-1) 80%, 
+        var(--shine-color-2) 100%
+      );
+      padding: 1px; /* This creates the 1px border thickness */
+      border-radius: 9999px; /* Perfect pill shape */
+      /* Combined the spin with the new pulse glow */
+      animation: border-spin 3s linear infinite, pulse-glow 4s ease-in-out infinite;
+    }
+
+    .dock-inner {
+      position: relative;
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.75rem;
+      background-color: var(--dock-bg);
+      border-radius: 9999px;
+      /* Subtle inner shadow to give depth inside the pill */
+      box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+    }
+
+    .card {
+      position: relative;
+      width: 3.5rem;
+      height: 3.5rem;
+      border-radius: 50%; /* Changed to perfect circles */
+      cursor: pointer;
+      text-decoration: none;
+      perspective: 1000px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      transform-style: preserve-3d;
+      /* Smooth, heavy spring effect */
+      transition: transform 0.7s cubic-bezier(0.25, 1.2, 0.25, 1.15);
+      transition-delay: calc(var(--i) * 0.06s);
+    }
+
+    /* Trigger flip when the whole dock is hovered */
+    .dock-inner:hover .card-inner {
+      transform: rotateX(180deg); /* Flipping vertically looks cooler for circles */
+    }
+
+    .card-face {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      backface-visibility: hidden;
+      /* Using JetBrains Mono for a sleek, tech-oriented typography */
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .card-front {
+      background-color: var(--card-bg);
+      color: var(--text-muted);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      box-shadow: inset 0 2px 4px rgba(255,255,255,0.02);
+      transition: color 0.3s ease;
+    }
+
+    .card-back {
+      background-color: #000;
+      color: #fff;
+      transform: rotateX(180deg);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      /* Base shadow, overwritten by brand color dynamically */
+      box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.1);
+    }
+
+    /* Individual Card Hover Effects (Post-Flip) */
+    .card:hover .card-back {
+      /* Glow effect matching brand color */
+      box-shadow: 0 0 20px var(--brand-color), inset 0 0 10px var(--brand-color);
+      color: var(--brand-color);
+      border-color: var(--brand-color);
+    }
+    
+    .card:hover .card-back i {
+      transform: scale(1.1);
+      transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1.5);
+    }
+
+    .tooltip {
+      position: absolute;
+      top: -45px;
+      left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      opacity: 0;
+      pointer-events: none;
+      background: #000;
+      color: #fff;
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      border: 1px solid var(--brand-color);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.8);
+      z-index: 50;
+      transition: all 0.25s cubic-bezier(0.25, 1.2, 0.25, 1);
+    }
+
+    /* Show tooltip only on individual hover */
+    .card:hover .tooltip {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- Background grid is pseudo-element on body -->
+
+  <div class="dock-wrapper">
+    <div class="dock-inner" id="dock">
+      <!-- Circular cards injected by JS -->
+    </div>
+  </div>
+
+  <script>
+    const socialItems = [
+      { letter: "C", icon: "fa-brands fa-github", label: "GitHub", href: "#", color: "#ffffff" },
+      // Twitter replaced with X (fa-x-twitter) as requested
+      { letter: "O", icon: "fa-brands fa-x-twitter", label: "X", href: "#", color: "#ffffff" }, 
+      { letter: "N", icon: "fa-brands fa-linkedin-in", label: "LinkedIn", href: "#", color: "#0077B5" },
+      { letter: "N", icon: "fa-brands fa-instagram", label: "Instagram", href: "#", color: "#E1306C" },
+      { letter: "E", icon: "fa-brands fa-youtube", label: "YouTube", href: "#", color: "#FF0000" },
+      { letter: "C", icon: "fa-solid fa-envelope", label: "Email", href: "#", color: "#EA4335" },
+      { letter: "T", icon: "fa-brands fa-discord", label: "Discord", href: "#", color: "#5865F2" },
+    ];
+
+    const dock = document.getElementById('dock');
+
+    socialItems.forEach((item, index) => {
+      const card = document.createElement('a');
+      card.className = 'card';
+      card.href = item.href;
+      
+      // Inject CSS variables for staggering and brand glows
+      card.style.setProperty('--i', index);
+      // We use RGB breakdown so we could manipulate opacity if needed, but hex works for basic glows
+      card.style.setProperty('--brand-color', item.color);
+
+      card.innerHTML = `
+        <div class="tooltip">${item.label}</div>
+        <div class="card-inner">
+          <div class="card-face card-front">${item.letter}</div>
+          <div class="card-face card-back">
+            <i class="${item.icon}"></i>
+          </div>
+        </div>
+      `;
+      
+      dock.appendChild(card);
+    });
+
+    const cards = document.querySelectorAll('.card');
+
+    cards.forEach(card => {
+      const inner = card.querySelector('.card-inner');
+
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        
+        // Calculate distance from center of the specific button
+        const x = e.clientX - rect.left - rect.width / 2;
+        const y = e.clientY - rect.top - rect.height / 2;
+        
+        // Magnetic pull factor (0.3 means it moves 30% of the distance towards the mouse)
+        const pullX = x * 0.4;
+        const pullY = y * 0.4;
+
+        // Apply translation over the flipped state
+        // We use rotateX(180deg) to keep it flipped, then translate it
+        inner.style.transition = 'transform 0.1s ease-out';
+        inner.style.transform = `rotateX(180deg) translate3d(${pullX}px, ${-pullY}px, 0)`;
+      });
+
+      card.addEventListener('mouseleave', () => {
+        // Reset the magnetic pull, smoothly snapping back to place
+        inner.style.transition = 'transform 0.5s cubic-bezier(0.25, 1.2, 0.25, 1.15)';
+        // Resetting it allows the CSS hover state (.dock-inner:hover) to take over again
+        inner.style.transform = '';
+      });
+    });
+  </script>
+</body>
+</html>
